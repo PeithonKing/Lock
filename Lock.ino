@@ -48,37 +48,31 @@ char key;
 
 void setup(){
 	lcd1.begin(16,2);
+	pinMode(A1, INPUT);
 }
-
 
 void loop(){
 	Ready();
 	key = 'E';
 	key = keypad.getKey();
-	if(EEPROM.read(0) == 0){reset();}
-	if(key != 'E'){
-		if(key == 'A'){
+	if(EEPROM.read(0) == 0){reset();} // Auto Reset
+	if(key == 'A'){
+		bool lo = login();
+		if(lo){
+			if(EEPROM.read(0) == 0){ChangePWD();}
 			lcd1.clear();
-			lcd1.setCursor(0, 0);
-			lcd1.print("1: Open Gate");
-			lcd1.setCursor(0, 1);
-			lcd1.print("2: + / - Users");
 			while(true){
+				lcd1.setCursor(0, 0);
+				lcd1.print("1: Open Gate");
+				lcd1.setCursor(0, 1);
+				lcd1.print("2: + / - Users");
 				char res = 'E';
 				while(res == 'E'){res = keypad.getKey();}
-				if(res == '1'){
-					bool lo = login();
-					if(lo){gateman();}
-					else{
-						lcd1.clear();
-						lcd1.print("Pehli Fursat");
-						lcd1.setCursor(1,6);
-						lcd1.print("Me Nikal");
-						delay(2000);
-						lcd1.clear();
-					}
+				if(res == 'B'){
+					lcd1.clear();
 					break;
 				}
+				if(res == '1'){gateman();}
 				if(res == '2'){
 					lcd1.clear();
 					lcd1.setCursor(0, 0);
@@ -90,21 +84,39 @@ void loop(){
 						while(res == 'E'){res = keypad.getKey();}
 						if(res == '1'){
 							if(EEPROM.read(1023) == 1){AddUser();}
-							else{
-								lcd1.clear();
-								lcd1.print("Memory Full!");
-								lcd1.setCursor(0, 1);
-								lcd1.print("No more new User");
-								delay(2000);
-								lcd1.clear();
-							}
+							else{MemoryFull();}
+							break;
 						}
-						if(res == '2'){RemoveUser();}
+						if(res == '2'){
+							RemoveUser();
+							break;
+						}
 					}
 					break;
 				}
 			}
 		}
+	}
+	if(analogRead(A0) > 512){
+		lcd1.clear();
+		lcd1.print("     Reset?");
+		lcd1.setCursor(0,1);
+		lcd1.print("1: Yes    2: No");
+		while(true){
+			key = keypad.getKey();
+			if(key == '1'){
+				lcd1.clear();
+				lcd1.print("Running factory");
+				lcd1.setCursor(0,1);
+				lcd1.print("RESET!");
+				reset();
+				delay(1000);
+				lcd1.clear();
+				break;
+			}
+			if(key == '2'){break;}
+		}
+		lcd1.clear();
 	}
 }
 
@@ -114,102 +126,110 @@ void Ready(){
 	lcd1.print("Ready...");
 }
 
-void AddUser(){
+void MemoryFull(){
 	lcd1.clear();
-	lcd1.print("To Add User");
-	lcd1.setCursor(3, 1);
-	lcd1.print("Login First!");
-	delay(2000);
-	bool lo = login();
-	if(lo){
-		int n = 0;
-		bool WeDo = false;
-		while(n < 1010){
-			n = n + 20;
-			if(EEPROM.read(n) == ' '){
-				WeDo = true;
-				break;
-			}
+	lcd1.print("Memory Full!");
+	lcd1.setCursor(0, 1);
+	lcd1.print("No more New User");
+	delay(1000);
+	lcd1.clear();	
+}
+
+void ChangePWD(){ // For ADMIN account only!
+	String to = takeInput("New Password:");
+	char a;
+	for(int st = 11; st <= to.length(); st++){
+		a = to[st-11];
+		EEPROM.write(st, a);
+	}
+	lcd1.clear();
+	lcd1.print("Password Changed");
+	delay(1000);
+	lcd1.clear();
+	EEPROM.write(0, 1);
+}
+
+void AddUser(){
+	int n = 1;
+	bool WeDo = false;
+	while(n < 1010){
+		if(EEPROM.read(n) == ' '){
+			WeDo = true;
+			break;
 		}
-		if(n == 1001){EEPROM.write(1023,0);}
-		if(WeDo){
-			int st = (20*n+21);
-			while(true){
-				String name = takeInput("New Username: ");
-				int is = matchName(name);
-				if(is > 0){
-					lcd1.print("Username Occupied!");
-					lcd1.setCursor(0,1);
-					lcd1.print("Try another !!");
-					delay(1500);
-					lcd1.clear();
+		n = n + 20;
+	}
+	if(WeDo){
+		int st = n;
+		while(true){
+			String name = takeInput("New Username: ");
+			int is = matchName(name);
+			if(is > 0){
+				lcd1.print("Username Occupied!");
+				lcd1.setCursor(0,1);
+				lcd1.print("Try another !!");
+				delay(1000);
+				lcd1.clear();
+			}
+			else{
+				char a;
+				for(int a1 = 0; a1 <= name.length(); a1++){
+					a = name[a1];
+					EEPROM.write(st, a);
+					st++;
 				}
-				else{
-					char a;
-					for(int a1 = 0; a1 <= name.length(); a1++){
-						a = name[a1];
-						EEPROM.write(st, a);
-						st++;
-					}
-					st = (20*n+31);
-					String pwd = takeInput("Password: ");
-					for(int a2 = 0; a2 <= pwd.length(); a2++){
-						a = pwd[a2];
-						EEPROM.write(st, a);
-						st++;
-					}
-					lcd1.print("New User Created");
-					delay(750);
-					lcd1.clear();
-					break;
+				st = n+10;
+				String pwd = takeInput("New Password: ");
+				for(int a2 = 0; a2 <= pwd.length(); a2++){
+					a = pwd[a2];
+					EEPROM.write(st, a);
+					st++;
 				}
+				lcd1.print("New User Created");
+				delay(1000);
+				lcd1.clear();
+				break;
 			}
 		}
 	}
 	else{
-		lcd1.clear();
-		lcd1.print("You cant do this");
-		lcd1.setCursor(0,1);
-		lcd1.print("without login");
-		delay(2000);
-		lcd1.clear();
+		EEPROM.write(1023,0);
+		MemoryFull();
 	}
 }
 
 void RemoveUser(){
-	lcd1.clear();
-	lcd1.print("To Remove User,");
-	lcd1.setCursor(3, 1);
-	lcd1.print("Login first!");
-	delay(2000);
-	bool lo = login();
-	if(lo){
-		String name = takeInput("Name to remove:");
-		int a = matchName(name);
-		if(a > 0){
-			String pwd = takeInput("Password:");
-			if(matchPwd(pwd, a)){
-				a = a - 10;
-				for(int d = 0; d < 20; d++){
-					EEPROM.update(a, ' ');
-					a++;
-				}
-				lcd1.clear();
-				lcd1.print("Account Deleted");
-				lcd1.setCursor(0, 1);
-				lcd1.print("Succesfully!");
-				delay(2000);
-				lcd1.clear();
+	String name = takeInput("Name to remove:");
+	int a = matchName(name);
+	if(a > 0){
+		String pwd = takeInput("Password:");
+		if(matchPwd(pwd, a)){
+			a = a - 10;
+			for(int d = 0; d < 20; d++){
+				EEPROM.update(a, ' ');
+				a++;
 			}
-			else{
-				lcd1.clear();
-				lcd1.print("Account Deletion");
-				lcd1.setCursor(8, 1);
-				lcd1.print("Aborted!");
-				delay(2000);
-				lcd1.clear();
-			}
+			lcd1.clear();
+			lcd1.print("Account Deletion");
+			lcd1.setCursor(0, 1);
+			lcd1.print("Succesful !");
+			delay(1000);
+			lcd1.clear();
 		}
+		else{
+			lcd1.clear();
+			lcd1.print("Account Deletion");
+			lcd1.setCursor(8, 1);
+			lcd1.print("   Aborted!");
+			delay(1000);
+			lcd1.clear();
+		}
+	}
+	else{
+		lcd1.clear();
+		lcd1.print("No Such User!");
+		delay(1000);
+		lcd1.clear();
 	}
 }
 
@@ -220,13 +240,7 @@ bool login(){
 		String pwd = takeInput("Password:");
 		return matchPwd(pwd, a);
 	}
-	else{
-		lcd1.clear();
-		lcd1.print("Wrong Username");
-		delay(2000);
-		lcd1.clear();
-		return false;
-	}
+	else{return WUsn();}
 }
 
 String takeInput(String ask){
@@ -252,12 +266,11 @@ String takeInput(String ask){
 	lcd1.print("You Entered: ");
 	lcd1.setCursor(0, 1);
 	lcd1.print(got);
-	delay(1500);
+	delay(1000);
 	lcd1.clear();
 	lcd1.print("Are you Sure?");
 	lcd1.setCursor(0,1);
 	lcd1.print("1: Yes    2: No");
-	delay(2000);
 	while(true){
 		res2 = keypad.getKey();
 		if(res2 == '1'){
@@ -265,16 +278,12 @@ String takeInput(String ask){
 				lcd1.print("Maximum length");
 				lcd1.setCursor(1,0);
 				lcd1.print("should be 9");
-				delay(2000);
+				delay(1000);
 				lcd1.clear();
 				lcd1.print("  Try Again !!  ");
-				delay(500);
+				delay(1000);
 				got = takeInput(ask);
 			}
-			lcd1.clear();
-			lcd1.print("Returning Text");
-			delay(2000);
-			lcd1.clear();
 			return got;
 		}
 		if(res2 == '2'){
@@ -286,48 +295,43 @@ String takeInput(String ask){
 int matchName(String name){
 	String comp;
 	int r = 1;
-	char k ='E';
+	char k = EEPROM.read(r);
 	int ret = 0;
 	while(r < 1021){
 		comp = " ";
 		while(k != ' '){
-			k = EEPROM.read(r);
 			comp.concat(k);
-			r++;
+            r++;
+            k = EEPROM.read(r);
 		}
-		comp.trim();
-		if(name.equals(comp)){
+        comp.trim();
+		comp.remove(comp.length()-1,1);
+        name.replace(" ","");
+		if(strcomp(name, comp)){
 			ret = (r-(r%10)+11);
-			lcd1.clear();
-			lcd1.print("Username Match");
-			delay(2000);
-			lcd1.clear();
 			return ret;
 			break;
 		}
 		else{r = (r-(r%10)+21);}
 	}
 	if(ret == 0){
-		lcd1.clear();
-		lcd1.print("No match found");
-		delay(2000);
-		lcd1.clear();
 		return ret;
 	}
 }
 
 bool matchPwd(String pwd, int r){
 	String comp = " ";
-	char k = 'E';
-	bool ret = false;
+	char k = EEPROM.read(r);
 	while(k != ' '){
-		k = EEPROM.read(r);
 		comp.concat(k);
 		r++;
+		k = EEPROM.read(r);
 	}
 	comp.trim();
-	if(pwd.equals(comp)){ret = true;}
-	else{return ret;}
+	comp.remove(comp.length()-1,1);
+    pwd.replace(" ","");
+	if(strcomp(pwd, comp)){return true;}
+	return WPwd();
 }
 
 void gateman(){
@@ -336,10 +340,10 @@ void gateman(){
 	lcd1.setCursor(0,1);
 	lcd1.print("B: Close Gate!");
 	char keyL = 'E';
-	while(keyL != 'B'){keypad.getKey();}
+	while(keyL != 'B'){keyL = keypad.getKey();}
 	lcd1.clear();
 	lcd1.print("Closing Gate!");
-	delay(500);
+	delay(1000);
 	lcd1.clear();
 }
 
@@ -348,7 +352,7 @@ bool WPwd(){
 	lcd1.print("Invalid Password");
 	lcd1.setCursor(1, 1);
 	lcd1.print("Try Again Later");
-	delay(2000);
+	delay(1000);
 	lcd1.clear();
 	return false;
 }
@@ -358,7 +362,7 @@ bool WUsn(){
 	lcd1.print("Invalid Username");
 	lcd1.setCursor(1, 1);
 	lcd1.print("Try Again Later");
-	delay(2000);
+	delay(1000);
 	lcd1.clear();
 	return false;
 }
@@ -379,4 +383,19 @@ void EEPROMclear(){
 		EEPROM.update(i, ' ');
 	}
 	EEPROM.update(1023, 1);
+}
+
+
+bool strcomp(String a, String b){
+	bool ret = true;
+	if(a.length() == b.length()){
+		for(int i = 0; i < a.length(); i++){
+			if(a[i] != b[i]){
+				ret = false;
+				break;
+			}
+		}
+	}
+	else{ret = false; }
+	return ret;
 }
