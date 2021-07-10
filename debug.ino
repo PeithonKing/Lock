@@ -1,4 +1,3 @@
-#include <LiquidCrystal.h>
 #include <EEPROM.h>
 #include <Keypad.h>
 
@@ -29,7 +28,6 @@ User Instructions:-
 // to store them, only use char type variables
 // [0], and [1023] have to be read in int type vaiable!
 
-LiquidCrystal lcd1(0, 1, 10, 11, 12, 13);
 
 const byte ROWS = 4;
 const byte COLS = 4;
@@ -47,7 +45,7 @@ Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
 char key;
 
 void setup(){
-	lcd1.begin(16,2);
+	Serial.begin(9600);
 }
 
 
@@ -58,11 +56,11 @@ void loop(){
 	if(EEPROM.read(0) == 0){reset();}
 	if(key != 'E'){
 		if(key == 'A'){
-			lcd1.clear();
-			lcd1.setCursor(0, 0);
-			lcd1.print("1: Open Gate");
-			lcd1.setCursor(0, 1);
-			lcd1.print("2: + / - Users");
+			//Serial.clear();
+			//Serial.setCursor(0, 0);
+			Serial.println("1: Open Gate");
+			//Serial.setCursor(0, 1);
+			Serial.println("2: + / - Users");
 			while(true){
 				char res = 'E';
 				while(res == 'E'){res = keypad.getKey();}
@@ -70,38 +68,43 @@ void loop(){
 					bool lo = login();
 					if(lo){gateman();}
 					else{
-						lcd1.clear();
-						lcd1.print("Pehli Fursat");
-						lcd1.setCursor(1,6);
-						lcd1.print("Me Nikal");
+						//Serial.clear();
+						Serial.println("Pehli Fursat");
+						//Serial.setCursor(1,6);
+						Serial.println("Me Nikal");
 						delay(2000);
-						lcd1.clear();
+						//Serial.clear();
 					}
 					break;
 				}
 				if(res == '2'){
-					lcd1.clear();
-					lcd1.setCursor(0, 0);
-					lcd1.print("1: Add User");
-					lcd1.setCursor(0, 1);
-					lcd1.print("2: Remove User");					
+					//Serial.clear();
+					//Serial.setCursor(0, 0);
+					Serial.println("1: Add User");
+					//Serial.setCursor(0, 1);
+					Serial.println("2: Remove User");					
 					while(true){
 						res = 'E';
 						while(res == 'E'){res = keypad.getKey();}
 						if(res == '1'){
-							if(EEPROM.read(1023) == 1){AddUser();}
+							if(EEPROM.read(1023) == 1){
+                                AddUser();
+                            }
 							else{
-								lcd1.clear();
-								lcd1.print("Memory Full!");
-								lcd1.setCursor(0, 1);
-								lcd1.print("No more new User");
+								//Serial.clear();
+								Serial.println("Memory Full!");
+								//Serial.setCursor(0, 1);
+								Serial.println("No more new User");
 								delay(2000);
-								lcd1.clear();
+								//Serial.clear();
 							}
+                            break;
 						}
-						if(res == '2'){RemoveUser();}
+						if(res == '2'){
+                            RemoveUser();
+                            break;
+                        }
 					}
-					break;
 				}
 			}
 		}
@@ -109,16 +112,16 @@ void loop(){
 }
 
 void Ready(){
-	lcd1.print("Aritra's Lock");
-	lcd1.setCursor(8,1);
-	lcd1.print("Ready...");
+	Serial.println("Aritra's Lock");
+	//Serial.setCursor(8,1);
+	Serial.println("Ready...");
 }
 
 void AddUser(){
-	lcd1.clear();
-	lcd1.print("To Add User");
-	lcd1.setCursor(3, 1);
-	lcd1.print("Login First!");
+	//Serial.clear();
+	Serial.println("To Add User");
+	//Serial.setCursor(3, 1);
+	Serial.println("Login First!");
 	delay(2000);
 	bool lo = login();
 	if(lo){
@@ -138,11 +141,11 @@ void AddUser(){
 				String name = takeInput("New Username: ");
 				int is = matchName(name);
 				if(is > 0){
-					lcd1.print("Username Occupied!");
-					lcd1.setCursor(0,1);
-					lcd1.print("Try another !!");
+					Serial.println("Username Occupied!");
+					//Serial.setCursor(0,1);
+					Serial.println("Try another !!");
 					delay(1500);
-					lcd1.clear();
+					//Serial.clear();
 				}
 				else{
 					char a;
@@ -158,29 +161,29 @@ void AddUser(){
 						EEPROM.write(st, a);
 						st++;
 					}
-					lcd1.print("New User Created");
+					Serial.println("New User Created");
 					delay(750);
-					lcd1.clear();
+					//Serial.clear();
 					break;
 				}
 			}
 		}
 	}
 	else{
-		lcd1.clear();
-		lcd1.print("You cant do this");
-		lcd1.setCursor(0,1);
-		lcd1.print("without login");
+		//Serial.clear();
+		Serial.println("You cant do this");
+		//Serial.setCursor(0,1);
+		Serial.println("without login");
 		delay(2000);
-		lcd1.clear();
+		//Serial.clear();
 	}
 }
 
 void RemoveUser(){
-	lcd1.clear();
-	lcd1.print("To Remove User,");
-	lcd1.setCursor(3, 1);
-	lcd1.print("Login first!");
+	//Serial.clear();
+	Serial.println("To Remove User,");
+	//Serial.setCursor(3, 1);
+	Serial.println("Login first!");
 	delay(2000);
 	bool lo = login();
 	if(lo){
@@ -194,20 +197,20 @@ void RemoveUser(){
 					EEPROM.update(a, ' ');
 					a++;
 				}
-				lcd1.clear();
-				lcd1.print("Account Deleted");
-				lcd1.setCursor(0, 1);
-				lcd1.print("Succesfully!");
+				//Serial.clear();
+				Serial.println("Account Deleted");
+				//Serial.setCursor(0, 1);
+				Serial.println("Succesfully!");
 				delay(2000);
-				lcd1.clear();
+				//Serial.clear();
 			}
 			else{
-				lcd1.clear();
-				lcd1.print("Account Deletion");
-				lcd1.setCursor(8, 1);
-				lcd1.print("Aborted!");
+				//Serial.clear();
+				Serial.println("Account Deletion");
+				//Serial.setCursor(8, 1);
+				Serial.println("Aborted!");
 				delay(2000);
-				lcd1.clear();
+				//Serial.clear();
 			}
 		}
 	}
@@ -221,60 +224,60 @@ bool login(){
 		return matchPwd(pwd, a);
 	}
 	else{
-		lcd1.clear();
-		lcd1.print("Wrong Username");
+		//Serial.clear();
+		Serial.println("Wrong Username");
 		delay(2000);
-		lcd1.clear();
+		//Serial.clear();
 		return false;
 	}
 }
 
 String takeInput(String ask){
 	String got = "";
-	lcd1.clear();
-	lcd1.print(ask);
-	lcd1.setCursor(0, 1);
-	lcd1.cursor();
-	lcd1.blink();
+	//Serial.clear();
+	Serial.println(ask);
+	//Serial.setCursor(0, 1);
+	//Serial.cursor();
+	//Serial.blink();
 	char res2;
 	while(true){
 		res2 = keypad.getKey();
 		if(res2){
 			if(res2 == 'A'){break;}
 			//if(res2 == 'B'){;}            //tried to have a backspace option
-			lcd1.print(res2);
+			Serial.println(res2);
 			got.concat(res2);
 		}
 	}
-	lcd1.noBlink();
-	lcd1.noCursor();
-	lcd1.clear();
-	lcd1.print("You Entered: ");
-	lcd1.setCursor(0, 1);
-	lcd1.print(got);
+	//Serial.noBlink();
+	//Serial.noCursor();
+	//Serial.clear();
+	Serial.println("You Entered: ");
+	//Serial.setCursor(0, 1);
+	Serial.println(got);
 	delay(1500);
-	lcd1.clear();
-	lcd1.print("Are you Sure?");
-	lcd1.setCursor(0,1);
-	lcd1.print("1: Yes    2: No");
+	//Serial.clear();
+	Serial.println("Are you Sure?");
+	//Serial.setCursor(0,1);
+	Serial.println("1: Yes    2: No");
 	delay(2000);
 	while(true){
 		res2 = keypad.getKey();
 		if(res2 == '1'){
 			if(got.length()>9){
-				lcd1.print("Maximum length");
-				lcd1.setCursor(1,0);
-				lcd1.print("should be 9");
+				Serial.println("Maximum length");
+				//Serial.setCursor(1,0);
+				Serial.println("should be 9");
 				delay(2000);
-				lcd1.clear();
-				lcd1.print("  Try Again !!  ");
+				//Serial.clear();
+				Serial.println("  Try Again !!  ");
 				delay(500);
 				got = takeInput(ask);
 			}
-			lcd1.clear();
-			lcd1.print("Returning Text");
+			//Serial.clear();
+			Serial.println("Returning Text");
 			delay(2000);
-			lcd1.clear();
+			//Serial.clear();
 			return got;
 		}
 		if(res2 == '2'){
@@ -298,20 +301,20 @@ int matchName(String name){
 		comp.trim();
 		if(name.equals(comp)){
 			ret = (r-(r%10)+11);
-			lcd1.clear();
-			lcd1.print("Username Match");
+			//Serial.clear();
+			Serial.println("Username Match");
 			delay(2000);
-			lcd1.clear();
+			//Serial.clear();
 			return ret;
 			break;
 		}
 		else{r = (r-(r%10)+21);}
 	}
 	if(ret == 0){
-		lcd1.clear();
-		lcd1.print("No match found");
+		//Serial.clear();
+		Serial.println("No match found");
 		delay(2000);
-		lcd1.clear();
+		//Serial.clear();
 		return ret;
 	}
 }
@@ -331,35 +334,35 @@ bool matchPwd(String pwd, int r){
 }
 
 void gateman(){
-	lcd1.clear();
-	lcd1.print("Gate Open!");
-	lcd1.setCursor(0,1);
-	lcd1.print("B: Close Gate!");
+	//Serial.clear();
+	Serial.println("Gate Open!");
+	//Serial.setCursor(0,1);
+	Serial.println("B: Close Gate!");
 	char keyL = 'E';
 	while(keyL != 'B'){keypad.getKey();}
-	lcd1.clear();
-	lcd1.print("Closing Gate!");
+	//Serial.clear();
+	Serial.println("Closing Gate!");
 	delay(500);
-	lcd1.clear();
+	//Serial.clear();
 }
 
 bool WPwd(){
-	lcd1.clear();
-	lcd1.print("Invalid Password");
-	lcd1.setCursor(1, 1);
-	lcd1.print("Try Again Later");
+	//Serial.clear();
+	Serial.println("Invalid Password");
+	//Serial.setCursor(1, 1);
+	Serial.println("Try Again Later");
 	delay(2000);
-	lcd1.clear();
+	//Serial.clear();
 	return false;
 }
 
 bool WUsn(){
-	lcd1.clear();
-	lcd1.print("Invalid Username");
-	lcd1.setCursor(1, 1);
-	lcd1.print("Try Again Later");
+	//Serial.clear();
+	Serial.println("Invalid Username");
+	//Serial.setCursor(1, 1);
+	Serial.println("Try Again Later");
 	delay(2000);
-	lcd1.clear();
+	//Serial.clear();
 	return false;
 }
 
