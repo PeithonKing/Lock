@@ -138,7 +138,7 @@ void MemoryFull(){
 void ChangePWD(){ // For ADMIN account only!
 	String to = takeInput("New Password:");
 	char a;
-	for(int st = 11; st <= to.length(); st++){
+	for(int st = 11; st <= to.length()+11; st++){
 		a = to[st-11];
 		EEPROM.write(st, a);
 	}
