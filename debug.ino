@@ -99,25 +99,26 @@ void loop(){
 		}
 	}
 	if(analogRead(A0) > 512){
-		//lcd1.clear();
-		Serial.println("     Reset?");
-		//lcd1.setCursor(0,1);
-		Serial.println("1: Yes    2: No");
-		while(true){
-			key = keypad.getKey();
-			if(key == '1'){
-				//lcd1.clear();
-				Serial.println("Running factory");
-				//lcd1.setCursor(0,1);
-				Serial.println("RESET!");
-				reset();
-				delay(1000);
-				//lcd1.clear();
-				break;
-			}
-			if(key == '2'){break;}
-		}
-		//lcd1.clear();
+      for(int dk = 0; dk < 50; dk++){
+        Serial.print(" | ");
+        Serial.print(dk);
+        if(dk<10){Serial.print(" | ");}
+        else{Serial.print("| ");}
+      }
+      Serial.println(1023);
+      char b;
+      Serial.print(" | ");
+      int kb = EEPROM.read(0);
+      Serial.print(kb);
+      Serial.print(" | ");
+      for(int dg = 1; dg < 50; dg++){
+        Serial.print(" | ");
+        b = EEPROM.read(dg);
+        Serial.print(b);
+        Serial.print(" | ");
+      }
+      Serial.println(EEPROM.read(1023));
+	
 	}
 }
 
@@ -142,7 +143,10 @@ void ChangePWD(){ // For ADMIN account only!
 	char a;
 	for(st = 11; st <= to.length()+11; st++){
 		a = to[st-11];
+        //Serial.print(st-11);
+        //Serial.println(a);
 		EEPROM.write(st, a);
+        //delay(500);
 	}
 	//lcd1.clear();
 	Serial.println("Password Changed");
@@ -296,25 +300,35 @@ String takeInput(String ask){
 
 int matchName(String name){
 	String comp;
-	int r = 1;
-	char k = EEPROM.read(r);
+	int r = 0;
+	int s = 1;
+	char k;
 	int ret = 0;
-	while(r < 1021){
+	while(s < 1021){
 		comp = " ";
+		k = EEPROM.read(s);
 		while(k != ' '){
 			comp.concat(k);
-            r++;
-            k = EEPROM.read(r);
+            s++;
+            k = EEPROM.read(s);
 		}
         comp.trim();
 		comp.remove(comp.length()-1,1);
         name.replace(" ","");
+        // Serial.print("give = '");
+        // Serial.print(name);
+        // Serial.println("'");
+        // Serial.print("read = '");
+        // Serial.print(comp);
+        // Serial.println("'");
+        // Serial.println();
 		if(strcomp(name, comp)){
-			ret = (r-(r%10)+11);
+			ret = ((20*r)+11);
 			return ret;
 			break;
 		}
-		else{r = (r-(r%10)+21);}
+		r++;
+		s = ((20*r)+1);
 	}
 	if(ret == 0){
 		return ret;

@@ -294,25 +294,35 @@ String takeInput(String ask){
 
 int matchName(String name){
 	String comp;
-	int r = 1;
-	char k = EEPROM.read(r);
+	int r = 0;
+	int s = 1;
+	char k;
 	int ret = 0;
-	while(r < 1021){
+	while(s < 1021){
 		comp = " ";
+		k = EEPROM.read(s);
 		while(k != ' '){
 			comp.concat(k);
-            r++;
-            k = EEPROM.read(r);
+            s++;
+            k = EEPROM.read(s);
 		}
         comp.trim();
 		comp.remove(comp.length()-1,1);
         name.replace(" ","");
+        Serial.print("give = '");
+        Serial.print(name);
+        Serial.println("'");
+        Serial.print("read = '");
+        Serial.print(comp);
+        Serial.println("'");
+        Serial.println();
 		if(strcomp(name, comp)){
-			ret = (r-(r%10)+11);
+			ret = ((20*r)+11);
 			return ret;
 			break;
 		}
-		else{r = (r-(r%10)+21);}
+		r++;
+		s = ((20*r)+1);
 	}
 	if(ret == 0){
 		return ret;
