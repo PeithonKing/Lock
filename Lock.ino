@@ -1,6 +1,7 @@
 #include <LiquidCrystal.h>
 #include <EEPROM.h>
 #include <Keypad.h>
+#include <Servo.h>
 
 /*
 User Instructions:- 
@@ -30,6 +31,9 @@ User Instructions:-
 // [0], and [1023] have to be read in int type vaiable!
 
 LiquidCrystal lcd1(0, 1, 10, 11, 12, 13);
+int ServoPin = A1;
+int open = 92;
+int close = 0;
 
 const byte ROWS = 4;
 const byte COLS = 4;
@@ -44,11 +48,14 @@ byte rowPins[ROWS] = {9, 8, 7, 6};
 byte colPins[COLS] = {5, 4, 3, 2};
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
+Servo gate;
 char key;
 
 void setup(){
 	lcd1.begin(16,2);
 	pinMode(A1, INPUT);
+	gate.attach(ServoPin);
+    gate.write(close);
 }
 
 void loop(){
@@ -353,6 +360,9 @@ bool matchPwd(String pwd, int r){
 
 void gateman(){
 	lcd1.clear();
+	lcd1.print("Opening Gate");
+	gate.write(open);
+	lcd1.clear();
 	lcd1.print("Gate Open!");
 	lcd1.setCursor(0,1);
 	lcd1.print("B: Close Gate!");
@@ -360,7 +370,7 @@ void gateman(){
 	while(keyL != 'B'){keyL = keypad.getKey();}
 	lcd1.clear();
 	lcd1.print("Closing Gate!");
-	delay(1000);
+	gate.write(0);
 	lcd1.clear();
 }
 
@@ -392,6 +402,7 @@ void reset(){
 		EEPROM.update(j, admin[j-1]);
 		EEPROM.update(j+10, admin[j-1]);
 	}
+	gate.write(close);
 }
 
 void EEPROMclear(){
