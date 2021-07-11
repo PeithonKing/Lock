@@ -55,6 +55,8 @@ void loop(){
 	Ready();
 	key = 'E';
 	key = keypad.getKey();
+  	//lcd1.clear();
+    //Seria
 	if(EEPROM.read(0) == 0){reset();} // Auto Reset
 	if(key == 'A'){
 		bool lo = login();
@@ -136,11 +138,15 @@ void MemoryFull(){
 }
 
 void ChangePWD(){ // For ADMIN account only!
+	for(int st = 11; st < 20; st++){EEPROM.update(st, ' ');}
 	String to = takeInput("New Password:");
 	char a;
 	for(int st = 11; st <= to.length()+11; st++){
 		a = to[st-11];
+        //lcd1.print(st-11);
+        //lcd1.print(a);
 		EEPROM.write(st, a);
+        //delay(500);
 	}
 	lcd1.clear();
 	lcd1.print("Password Changed");
@@ -185,6 +191,7 @@ void AddUser(){
 					EEPROM.write(st, a);
 					st++;
 				}
+				lcd1.clear();
 				lcd1.print("New User Created");
 				delay(1000);
 				lcd1.clear();
@@ -309,13 +316,13 @@ int matchName(String name){
         comp.trim();
 		comp.remove(comp.length()-1,1);
         name.replace(" ","");
-        Serial.print("give = '");
-        Serial.print(name);
-        Serial.println("'");
-        Serial.print("read = '");
-        Serial.print(comp);
-        Serial.println("'");
-        Serial.println();
+        // lcd1.print("give = '");
+        // lcd1.print(name);
+        // lcd1.print("'");
+        // lcd1.print("read = '");
+        // lcd1.print(comp);
+        // lcd1.print("'");
+        // lcd1.print();
 		if(strcomp(name, comp)){
 			ret = ((20*r)+11);
 			return ret;
