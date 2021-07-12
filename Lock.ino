@@ -14,17 +14,25 @@ User Instructions:-
 5) Maximum number of users supported = 50 (+1 admin)
 6) Admin Username and Password both are "1234" initially.
 	They have to be changed on first Login.
-7) 
+7) Hidden Feature for Sincere People who care to read this user guide:
+	(points 5 and 6 will be printed on the box and we
+	will stick a paper on 'A' and write "ENTER" on it)
+	a) To change your password:
+		When device is READY....
+		Press these keys successively => *, #, D and C 
+	b) Though usernames and passwords should ideally be numerical only,
+		you can actually use any key for making username or password.
+		(ofcourse other than 'A' as it is used as the "ENTER" key!)
 */
 
-// 	                *** DONT FORGET ***
+// 	                *** DON'T FORGET (Not for users) ***
 // EEPROM space [0] stores if admin password has been
 // changed or not. If no, value is 0, else value is 1.
 // if(EEPROM.read(0) == 0){reset();}  // UNIMPORTANT LINE MAYBE...
-///////////////////// If you see 0 at [0] remember to reset
+//////////// If you see 0 at [0] remember to reset
 // EEPROM space [1023] stores current number of users (including admin)
 // unused EEPROM space = [1021] and [1022]
-// 
+
 // All the spaces except [0], [1023] and the unused ones, are char type
 // So while reading them don't try to read them in int,
 // to store them, only use char type variables
@@ -48,8 +56,9 @@ byte rowPins[ROWS] = {9, 8, 7, 6};
 byte colPins[COLS] = {5, 4, 3, 2};
 
 Keypad keypad = Keypad( makeKeymap(keys), rowPins, colPins, ROWS, COLS );
-Servo gate;
 char key;
+
+Servo gate;
 
 void setup(){
 	lcd1.begin(16,2);
@@ -58,17 +67,18 @@ void setup(){
     gate.write(close);
 }
 
+int pwdc = 0;
+
 void loop(){
 	Ready();
-	key = 'E';
-	key = keypad.getKey();
-  	//lcd1.clear();
-    //Seria
 	if(EEPROM.read(0) == 0){reset();} // Auto Reset
+	key = keypad.getKey();
+	while(key == 0){key = keypad.getKey();}
 	if(key == 'A'){
+		pwdc = 0;
 		bool lo = login();
 		if(lo){
-			if(EEPROM.read(0) == 0){ChangePWD();}
+			if(EEPROM.read(0) == 0){ChangePWDadmin();}
 			lcd1.clear();
 			while(true){
 				lcd1.setCursor(0, 0);
@@ -101,12 +111,21 @@ void loop(){
 							break;
 						}
 					}
-					break;
 				}
 			}
 		}
 	}
+	if(key == '*' && pwdc == 0){pwdc++;}
+	if(key == '#' && pwdc == 1){pwdc++;}
+	if(key == 'D' && pwdc == 2){pwdc++;}
+	if(key == 'C'){
+		if(pwdc == 3){
+			ChangePWD();
+			pwdc = 0;
+		}
+	}
 	if(analogRead(A0) > 512){
+		pwdc = 0;
 		lcd1.clear();
 		lcd1.print("     Reset?");
 		lcd1.setCursor(0,1);
@@ -141,10 +160,10 @@ void MemoryFull(){
 	lcd1.setCursor(0, 1);
 	lcd1.print("No more New User");
 	delay(1000);
-	lcd1.clear();	
+	lcd1.clear();
 }
 
-void ChangePWD(){ // For ADMIN account only!
+void ChangePWDadmin(){ // For ADMIN account only!
 	for(int st = 11; st < 20; st++){EEPROM.update(st, ' ');}
 	String to = takeInput("New Password:");
 	char a;
@@ -160,6 +179,29 @@ void ChangePWD(){ // For ADMIN account only!
 	delay(1000);
 	lcd1.clear();
 	EEPROM.write(0, 1);
+}
+
+void ChangePWD(){ //For all accounts incluing ADMIN account.
+	String name = takeInput("Username:");
+	int a = matchName(name);
+	if(a > 0){
+		String pwd = takeInput("Old Password:");
+		if(matchPwd(pwd, a)){
+			String to = takeInput("New Password:");
+			char b;
+			for(int st = a; st < (a+10); st++){EEPROM.update(st, ' ');}
+			for(int st = a; st <= (to.length()+a); st++){
+				b = to[st-a];
+				EEPROM.write(st, b);
+			}
+			lcd1.clear();
+			lcd1.print("Password Changed");
+			delay(1000);
+			lcd1.clear();
+		}
+		else{WUsn();}
+	}
+	else{WPwd();}
 }
 
 void AddUser(){
@@ -223,10 +265,11 @@ void RemoveUser(){
 				EEPROM.update(a, ' ');
 				a++;
 			}
+			EEPROM.update(1023, 1);
 			lcd1.clear();
 			lcd1.print("Account Deletion");
 			lcd1.setCursor(0, 1);
-			lcd1.print("Succesful !");
+			lcd1.print("  Succesful !");
 			delay(1000);
 			lcd1.clear();
 		}
@@ -289,8 +332,9 @@ String takeInput(String ask){
 		res2 = keypad.getKey();
 		if(res2 == '1'){
 			if(got.length()>9){
+				lcd1.clear();
 				lcd1.print("Maximum length");
-				lcd1.setCursor(1,0);
+				lcd1.setCursor(0,1);
 				lcd1.print("should be 9");
 				delay(1000);
 				lcd1.clear();
@@ -362,6 +406,7 @@ void gateman(){
 	lcd1.clear();
 	lcd1.print("Opening Gate");
 	gate.write(open);
+	delay(100);
 	lcd1.clear();
 	lcd1.print("Gate Open!");
 	lcd1.setCursor(0,1);
@@ -370,7 +415,8 @@ void gateman(){
 	while(keyL != 'B'){keyL = keypad.getKey();}
 	lcd1.clear();
 	lcd1.print("Closing Gate!");
-	gate.write(0);
+	gate.write(close);
+	delay(100);
 	lcd1.clear();
 }
 
