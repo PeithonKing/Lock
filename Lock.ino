@@ -8,14 +8,15 @@ User Instructions:-
 1) Pressing A helps to enter into input mode for
 	USERNAME and also acts as the "ENTER" key!
 2) Presssing B helps it to lock if it is unlocked!
-3) Username max length = 9
-4) Password max length = 9
-5) Passwords and Usernames are all numeric only
-6) Maximum number of users supported = 50 (+1 admin)
-7) Admin Username and Password both are "1234" initially.
+3) Username and password should be:
+	minimum 4 character and
+	maximum 9 characters long
+4) Passwords and Usernames are all numeric only
+5) Maximum number of users supported = 50 (+1 admin)
+6) Admin Username and Password both are "1234" initially.
 	Password have to be changed on first Login.
-8) Hidden Feature for Sincere People who care to read this user guide:
-	(points 6 and 7 will be printed on the box and we
+7) Hidden Feature for Sincere People who care to read this user guide:
+	(points 5 and 6 will be printed on the box for advertisement purpose and we
 	will stick a paper on 'A' and write "ENTER" on it)
 	a) To change your password:
 		When device is READY....
@@ -64,7 +65,7 @@ Servo gate;
 
 void setup(){
 	lcd1.begin(16,2);
-	pinMode(A1, INPUT);
+	pinMode(A0, INPUT);
 	gate.attach(ServoPin);
     gate.write(close);
 }
@@ -75,7 +76,6 @@ void loop(){
 	Ready();
 	if(EEPROM.read(0) == 0){reset();} // Auto Reset
 	key = keypad.getKey();
-	while(key == 0){key = keypad.getKey();}
 	if(key == 'A'){
 		pwdc = 0;
 		bool lo = login();
@@ -117,16 +117,7 @@ void loop(){
 			}
 		}
 	}
-	if(key == '*' && pwdc == 0){pwdc++;}
-	if(key == '#' && pwdc == 1){pwdc++;}
-	if(key == 'D' && pwdc == 2){pwdc++;}
-	if(key == 'C'){
-		if(pwdc == 3){
-			ChangePWD();
-			pwdc = 0;
-		}
-	}
-	if(analogRead(A0) > 512){
+	if(analogRead(A0) > 500){
 		pwdc = 0;
 		lcd1.clear();
 		lcd1.print("     Reset?");
@@ -140,7 +131,7 @@ void loop(){
 				lcd1.setCursor(0,1);
 				lcd1.print("RESET!");
 				reset();
-				delay(1000);
+				delay(2000);
 				lcd1.clear();
 				break;
 			}
@@ -148,6 +139,14 @@ void loop(){
 		}
 		lcd1.clear();
 	}
+	if(key == '*' && pwdc == 0){pwdc++;}
+	if(key == '#' && pwdc == 1){pwdc++;}
+	if(key == 'D' && pwdc == 2){pwdc++;}
+	if(key == 'C' && pwdc == 3){
+		ChangePWD();
+		pwdc = 0;
+	}
+	if(key != '*' && key != '#' && key != 'D' && key != 'C' && key != 0){pwdc = 0;}
 }
 
 void Ready(){
@@ -161,7 +160,7 @@ void MemoryFull(){
 	lcd1.print("Memory Full!");
 	lcd1.setCursor(0, 1);
 	lcd1.print("No more New User");
-	delay(1000);
+	delay(2000);
 	lcd1.clear();
 }
 
@@ -201,9 +200,9 @@ void ChangePWD(){ //For all accounts incluing ADMIN account.
 			delay(1000);
 			lcd1.clear();
 		}
-		else{WUsn();}
+		else{WPwd();}
 	}
-	else{WPwd();}
+	else{WUsn();}
 }
 
 void AddUser(){
@@ -222,10 +221,11 @@ void AddUser(){
 			String name = takeInput("New Username: ");
 			int is = matchName(name);
 			if(is > 0){
-				lcd1.print("Username Occupied!");
+				lcd1.clear();
+				lcd1.print("Name Occupied!");
 				lcd1.setCursor(0,1);
 				lcd1.print("Try another !!");
-				delay(1000);
+				delay(2000);
 				lcd1.clear();
 			}
 			else{
@@ -272,15 +272,15 @@ void RemoveUser(){
 			lcd1.print("Account Deletion");
 			lcd1.setCursor(0, 1);
 			lcd1.print("  Succesful !");
-			delay(1000);
+			delay(1500);
 			lcd1.clear();
 		}
 		else{
 			lcd1.clear();
 			lcd1.print("Account Deletion");
 			lcd1.setCursor(8, 1);
-			lcd1.print("   Aborted!");
-			delay(1000);
+			lcd1.print("Aborted!");
+			delay(1500);
 			lcd1.clear();
 		}
 	}
@@ -333,15 +333,22 @@ String takeInput(String ask){
 	while(true){
 		res2 = keypad.getKey();
 		if(res2 == '1'){
-			if(got.length()>9){
+			if(got.length()>9 || got.length() < 4){
 				lcd1.clear();
-				lcd1.print("Maximum length");
+				lcd1.print("Incompatible");
+				lcd1.setCursor(9,1);
+				lcd1.print("length");
+				delay(1500);
+				lcd1.clear();
+				lcd1.print("Max length = 9");
 				lcd1.setCursor(0,1);
-				lcd1.print("should be 9");
-				delay(1000);
+				lcd1.print("Min length = 4");
+				delay(2000);
 				lcd1.clear();
-				lcd1.print("  Try Again !!  ");
-				delay(1000);
+				lcd1.print("Read User Guide");
+				lcd1.setCursor(0,1);
+				lcd1.print("and Try Again!");
+				delay(2000);
 				got = takeInput(ask);
 			}
 			return got;
@@ -427,7 +434,7 @@ bool WPwd(){
 	lcd1.print("Invalid Password");
 	lcd1.setCursor(1, 1);
 	lcd1.print("Try Again Later");
-	delay(1000);
+	delay(2000);
 	lcd1.clear();
 	return false;
 }
@@ -437,7 +444,7 @@ bool WUsn(){
 	lcd1.print("Invalid Username");
 	lcd1.setCursor(1, 1);
 	lcd1.print("Try Again Later");
-	delay(1000);
+	delay(2000);
 	lcd1.clear();
 	return false;
 }
@@ -451,6 +458,7 @@ void reset(){
 		EEPROM.update(j+10, admin[j-1]);
 	}
 	gate.write(close);
+	pwdc = 0;
 }
 
 void EEPROMclear(){
