@@ -11,15 +11,17 @@ User Instructions:-
 3) Username max length = 9
 4) Password max length = 9
 5) Passwords and Usernames are all numeric only
-5) Maximum number of users supported = 50 (+1 admin)
-6) Admin Username and Password both are "1234" initially.
-	They have to be changed on first Login.
-7) Hidden Feature for Sincere People who care to read this user guide:
-	(points 5 and 6 will be printed on the box and we
+6) Maximum number of users supported = 50 (+1 admin)
+7) Admin Username and Password both are "1234" initially.
+	Password have to be changed on first Login.
+8) Hidden Feature for Sincere People who care to read this user guide:
+	(points 6 and 7 will be printed on the box and we
 	will stick a paper on 'A' and write "ENTER" on it)
 	a) To change your password:
 		When device is READY....
 		Press these keys successively => *, #, D and C 
+		// I will remember to add this feature in next update
+		// and delete this line once I have done that!
 	b) Though usernames and passwords should ideally be numerical only,
 		you can actually use any key for making username or password.
 		(ofcourse other than 'A' as it is used as the "ENTER" key!)
