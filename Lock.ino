@@ -15,7 +15,11 @@ User Instructions:-
 5) Maximum number of users supported = 50 (+1 admin)
 6) Admin Username and Password both are "1234" initially.
 	Password have to be changed on first Login.
-7) Hidden Feature for Sincere People who care to read this user guide:
+7) This device can be setup for two types of users:
+	a) Home user:- every user is an admin user and can add or remove users
+	b) Office Users:- Only the admin user can add or remove users
+
+8) Hidden Feature for Sincere People who care to read this user guide:
 	(points 5 and 6 will be printed on the box for advertisement purpose and we
 	will stick a paper on 'A' and write "ENTER" on it)
 	a) To change your password:
@@ -34,12 +38,15 @@ User Instructions:-
 // if(EEPROM.read(0) == 0){reset();}  // UNIMPORTANT LINE MAYBE...
 //////////// If you see 0 at [0] remember to reset
 // EEPROM space [1023] stores current number of users (including admin)
-// unused EEPROM space = [1021] and [1022]
+// EEPROM space [1022] stores current mode of use:
+		// mode = 1     =>     for home use
+		// mode = 2     =>     for office use
+// unused EEPROM space = [1021]
 
-// All the spaces except [0], [1023] and the unused ones, are char type
-// So while reading them don't try to read them in int,
+// All the spaces except [0], [1022], [1023] (and the unused ones ofcourse) are char type
+// So while reading them never try to read them in int,
 // to store them, only use char type variables
-// [0], and [1023] have to be read in int type vaiable!
+// [0], [1022], and [1023] have to be read in int type vaiable!
 
 LiquidCrystal lcd1(0, 1, 10, 11, 12, 13);
 int ServoPin = A1;
@@ -71,6 +78,7 @@ void setup(){
 }
 
 int pwdc = 0;
+bool canEdit = false;
 
 void loop(){
 	Ready();
@@ -79,41 +87,32 @@ void loop(){
 	if(key == 'A'){
 		pwdc = 0;
 		bool lo = login();
-		if(lo){
-			if(EEPROM.read(0) == 0){ChangePWDadmin();}
-			lcd1.clear();
-			while(true){
-				lcd1.setCursor(0, 0);
-				lcd1.print("1: Open Gate");
-				lcd1.setCursor(0, 1);
-				lcd1.print("2: + / - Users");
-				char res = 'E';
-				while(res == 'E'){res = keypad.getKey();}
-				if(res == 'B'){
-					lcd1.clear();
-					break;
-				}
-				if(res == '1'){gateman();}
-				if(res == '2'){
-					lcd1.clear();
-					lcd1.setCursor(0, 0);
-					lcd1.print("1: Add User");
-					lcd1.setCursor(0, 1);
-					lcd1.print("2: Remove User");					
-					while(true){
-						res = 'E';
-						while(res == 'E'){res = keypad.getKey();}
-						if(res == '1'){
-							if(EEPROM.read(1023) == 1){AddUser();}
-							else{MemoryFull();}
-							break;
-						}
-						if(res == '2'){
-							RemoveUser();
-							break;
-						}
+		if(lo){	
+			if(EEPROM.read(0) == 0){
+				ChangePWDadmin();
+				lcd1.clear();
+				lcd1.print("  Environment:");
+				lcd1.setCursor(0,1);
+				lcd1.print("1:Home  2:Office");
+				while(true){
+					key = keypad.getKey();
+					if(key == '1'){
+						EEPROM.update(1022, 1);
+						break;
+					}
+					if(key == '2'){
+						EEPROM.update(1022, 2);
+						break;
 					}
 				}
+				lcd1.clear();
+			}
+			if(EEPROM.read(1022) == 1){adminUser();} // home user
+			if(EEPROM.read(1022) == 2){ // office user
+				if(canEdit){
+					adminUser();
+				}
+				else{normalUser();}
 			}
 		}
 	}
@@ -147,6 +146,64 @@ void loop(){
 		pwdc = 0;
 	}
 	if(key != '*' && key != '#' && key != 'D' && key != 'C' && key != 0){pwdc = 0;}
+}
+
+void adminUser(){
+	lcd1.clear();
+	while(true){
+		lcd1.setCursor(0, 0);
+		lcd1.print("1: Open Gate");
+		lcd1.setCursor(0, 1);
+		lcd1.print("2: + / - Users");
+		char res = 'E';
+		while(res == 'E'){res = keypad.getKey();}
+		if(res == 'B'){
+			lcd1.clear();
+			canEdit = false;
+			break;
+		}
+		if(res == '1'){gateman();}
+		if(res == '2'){
+			lcd1.clear();
+			lcd1.setCursor(0, 0);
+			lcd1.print("1: Add User");
+			lcd1.setCursor(0, 1);
+			lcd1.print("2: Remove User");					
+			while(true){
+				res = 'E';
+				while(res == 'E'){res = keypad.getKey();}
+				if(res == '1'){
+					if(EEPROM.read(1023) == 1){AddUser();}
+					else{MemoryFull();}
+					break;
+				}
+				if(res == '2'){
+					RemoveUser();
+					break;
+				}
+				if(res == 'B'){
+					break;
+				}
+			}
+		}
+	}
+}
+
+void normalUser(){
+	lcd1.clear();
+	while(true){
+		lcd1.setCursor(0, 0);
+		lcd1.print("1: Open Gate");
+		lcd1.setCursor(0, 1);
+		lcd1.print("B: Logout");
+		char res = 'E';
+		while(res == 'E'){res = keypad.getKey();}
+		if(res == 'B'){
+			lcd1.clear();
+			break;
+		}
+		if(res == '1'){gateman();}
+	}
 }
 
 void Ready(){
@@ -376,13 +433,6 @@ int matchName(String name){
         comp.trim();
 		comp.remove(comp.length()-1,1);
         name.replace(" ","");
-        // lcd1.print("give = '");
-        // lcd1.print(name);
-        // lcd1.print("'");
-        // lcd1.print("read = '");
-        // lcd1.print(comp);
-        // lcd1.print("'");
-        // lcd1.print();
 		if(strcomp(name, comp)){
 			ret = ((20*r)+11);
 			return ret;
@@ -396,7 +446,8 @@ int matchName(String name){
 	}
 }
 
-bool matchPwd(String pwd, int r){
+bool matchPwd(String pwd, int back){
+	int r = back;
 	String comp = " ";
 	char k = EEPROM.read(r);
 	while(k != ' '){
@@ -407,7 +458,10 @@ bool matchPwd(String pwd, int r){
 	comp.trim();
 	comp.remove(comp.length()-1,1);
     pwd.replace(" ","");
-	if(strcomp(pwd, comp)){return true;}
+	if(strcomp(pwd, comp)){
+		if(back == 11){canEdit = true;}
+		return true;
+	}
 	return WPwd();
 }
 
