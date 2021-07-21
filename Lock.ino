@@ -4,7 +4,7 @@
 #include <Servo.h>
 
 /*
-User Instructions:- 
+User Instructions:-
 1) Pressing A helps to enter into input mode for
 	USERNAME and also acts as the "ENTER" key!
 2) Presssing B helps it to lock if it is unlocked!
@@ -15,32 +15,40 @@ User Instructions:-
 5) Maximum number of users supported = 50 (+1 admin)
 6) Admin Username and Password both are "1234" initially.
 	Password have to be changed on first Login.
-7) This device can be setup for two types of users:
+7) Controls for giving input:
+	numbers	= > 	to type input
+	'*' 	= > 	to move cursor to the left
+	'#' 	= > 	to move cursor to the right
+	'C' 	= > 	to have a backspace
+8) This device can be setup for two types of users:
 	a) Home user:- every user is an admin user and can add or remove users
 	b) Office Users:- Only the admin user can add or remove users
 
-8) Hidden Feature for Sincere People who care to read this user guide:
+9) Hidden Feature for Sincere People who care to read this user guide:
 	(points 5 and 6 will be printed on the box for advertisement purpose and we
 	will stick a paper on 'A' and write "ENTER" on it)
 	a) To change your password:
 		When device is READY....
-		Press these keys successively => *, #, D and C 
-	b) Though usernames and passwords should ideally be numerical only,
-		you can actually use any key for making username or password.
-		(ofcourse other than 'A' and 'B' as they have other functions
-				'A' is used as Enter key
-				'B' is used as Backspace key
+		Press these keys successively => *, #, D and C
+	b) There was one more hidden feature, but I removed
+		it in this commit, go to previous commits to see it!
+
+Note:- Feel free to raise any issues if you feel like
+	at "https://github.com/PeithonKing/Lock/issues".
+	It will be addressed ASAP.
+
+					*** Thanks ***
 */
 
-// 	          *** DON'T FORGET (Not for users, for developers) ***
+//            *** DON'T FORGET (Not for users, for developers) ***
 // EEPROM space [0] stores if admin password has been
 // changed or not. If no, value is 0, else value is 1.
 // if(EEPROM.read(0) == 0){reset();}  // UNIMPORTANT LINE MAYBE...
 // ////////// If you see 0 at [0] remember to reset
 // EEPROM space [1023] stores current number of users (including admin)
 // EEPROM space [1022] stores current mode of use:
-// 				mode = 1     =>     for home use
-// 				mode = 2     =>     for office use
+//        mode = 1     =>     for home use
+//        mode = 2     =>     for office use
 // unused EEPROM space = [1021]
 
 // All the spaces except [0], [1022], [1023] (and the unused ones ofcourse) are char type
@@ -74,7 +82,7 @@ void setup(){
 	lcd1.begin(16,2);
 	pinMode(A0, INPUT);
 	gate.attach(ServoPin);
-    gate.write(close);
+		gate.write(close);
 }
 
 int pwdc = 0;
@@ -87,7 +95,7 @@ void loop(){
 	if(key == 'A'){
 		pwdc = 0;
 		bool lo = login();
-		if(lo){	
+		if(lo){
 			if(EEPROM.read(0) == 0){
 				ChangePWDadmin();
 				lcd1.clear();
@@ -168,7 +176,7 @@ void adminUser(){
 			lcd1.setCursor(0, 0);
 			lcd1.print("1: Add User");
 			lcd1.setCursor(0, 1);
-			lcd1.print("2: Remove User");					
+			lcd1.print("2: Remove User");
 			while(true){
 				res = 'E';
 				while(res == 'E'){res = keypad.getKey();}
@@ -358,6 +366,7 @@ bool login(){
 
 String takeInput(String ask){
 	String got = "";
+	int cursPos = 0;
 	lcd1.clear();
 	lcd1.print(ask);
 	lcd1.setCursor(0, 1);
@@ -368,16 +377,43 @@ String takeInput(String ask){
 		res2 = keypad.getKey();
 		if(res2){
 			if(res2 == 'A'){break;}
-			if(res2 == 'B'){
-				got.remove(got.length()-1,1);
+			if(res2 == 'C'){
+				got.remove(cursPos-1,1);
+				cursPos--;
 				lcd1.clear();
 				lcd1.print(ask);
 				lcd1.setCursor(0, 1);
 				lcd1.print(got);
+				lcd1.setCursor(cursPos, 1);
 			}
+			else if(res2 == '*'){   // move cursor to left  (if possible)
+				if(cursPos > 0){
+					cursPos--;
+					lcd1.setCursor(cursPos, 1);
+				}
+			}
+			else if(res2 == '#'){   // move cursor to right (if possible)
+				if(cursPos < got.length()){
+					cursPos++;
+					lcd1.setCursor(cursPos, 1);
+				}
+			}
+			else if(res2 == 'B' || res2 == 'D'){}
 			else{
-				lcd1.print(res2);
-				got.concat(res2);
+				if(cursPos == got.length()){
+					lcd1.print(res2);
+					got.concat(res2);
+					cursPos++;
+				}
+				else{
+					got = insert(got, cursPos, res2);
+					cursPos++;
+					lcd1.clear();
+					lcd1.print(ask);
+					lcd1.setCursor(0, 1);
+					lcd1.print(got);
+					lcd1.setCursor(cursPos, 1);
+				}
 			}
 		}
 	}
@@ -421,6 +457,20 @@ String takeInput(String ask){
 	}
 }
 
+String insert(String got, int p, char c){
+	int g = got.length();
+	String part1 = "";
+	int i = 0;
+	for(i; i<p; i++){
+		part1.concat(got[i]);
+	}
+	part1.concat(c);
+	for(i; i<g; i++){
+		part1.concat(got[i]);
+	}
+	return part1;
+}
+
 int matchName(String name){
 	String comp;
 	int r = 0;
@@ -432,10 +482,10 @@ int matchName(String name){
 		k = EEPROM.read(s);
 		while(k != ' '){
 			comp.concat(k);
-            s++;
-            k = EEPROM.read(s);
+						s++;
+						k = EEPROM.read(s);
 		}
-        comp.trim();
+				comp.trim();
 		comp.remove(comp.length()-1,1);
 		if(strcomp(name, comp)){
 			ret = ((20*r)+11);
