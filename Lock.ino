@@ -25,22 +25,22 @@ User Instructions:-
 	a) To change your password:
 		When device is READY....
 		Press these keys successively => *, #, D and C 
-		// I will remember to add this feature in next update
-		// and delete this line once I have done that!
 	b) Though usernames and passwords should ideally be numerical only,
 		you can actually use any key for making username or password.
-		(ofcourse other than 'A' as it is used as the "ENTER" key!)
+		(ofcourse other than 'A' and 'B' as they have other functions
+				'A' is used as Enter key
+				'B' is used as Backspace key
 */
 
-// 	                *** DON'T FORGET (Not for users) ***
+// 	          *** DON'T FORGET (Not for users, for developers) ***
 // EEPROM space [0] stores if admin password has been
 // changed or not. If no, value is 0, else value is 1.
 // if(EEPROM.read(0) == 0){reset();}  // UNIMPORTANT LINE MAYBE...
-//////////// If you see 0 at [0] remember to reset
+// ////////// If you see 0 at [0] remember to reset
 // EEPROM space [1023] stores current number of users (including admin)
 // EEPROM space [1022] stores current mode of use:
-		// mode = 1     =>     for home use
-		// mode = 2     =>     for office use
+// 				mode = 1     =>     for home use
+// 				mode = 2     =>     for office use
 // unused EEPROM space = [1021]
 
 // All the spaces except [0], [1022], [1023] (and the unused ones ofcourse) are char type
@@ -227,10 +227,7 @@ void ChangePWDadmin(){ // For ADMIN account only!
 	char a;
 	for(int st = 11; st <= to.length()+11; st++){
 		a = to[st-11];
-        //lcd1.print(st-11);
-        //lcd1.print(a);
 		EEPROM.write(st, a);
-        //delay(500);
 	}
 	lcd1.clear();
 	lcd1.print("Password Changed");
@@ -371,9 +368,17 @@ String takeInput(String ask){
 		res2 = keypad.getKey();
 		if(res2){
 			if(res2 == 'A'){break;}
-			//if(res2 == 'B'){;}            //tried to have a backspace option
-			lcd1.print(res2);
-			got.concat(res2);
+			if(res2 == 'B'){
+				got.remove(got.length()-1,1);
+				lcd1.clear();
+				lcd1.print(ask);
+				lcd1.setCursor(0, 1);
+				lcd1.print(got);
+			}
+			else{
+				lcd1.print(res2);
+				got.concat(res2);
+			}
 		}
 	}
 	lcd1.noBlink();
@@ -432,7 +437,6 @@ int matchName(String name){
 		}
         comp.trim();
 		comp.remove(comp.length()-1,1);
-        name.replace(" ","");
 		if(strcomp(name, comp)){
 			ret = ((20*r)+11);
 			return ret;
@@ -457,7 +461,6 @@ bool matchPwd(String pwd, int back){
 	}
 	comp.trim();
 	comp.remove(comp.length()-1,1);
-    pwd.replace(" ","");
 	if(strcomp(pwd, comp)){
 		if(back == 11){canEdit = true;}
 		return true;
