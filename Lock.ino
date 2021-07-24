@@ -25,11 +25,10 @@ User Instructions:-
 	b) Office Users:- Only the admin user can add or remove users
 
 9) Hidden Feature for Sincere People who care to read this user guide:
-	(points 5 and 6 will be printed on the box for advertisement purpose and we
-	will stick a paper on 'A' and write "ENTER" on it)
+	(points 5 and 6 will be printed on the box for advertisement purpose)
 	a) To change your password:
 		When device is READY....
-		Press these keys successively => *, #, D and C
+		Press these keys successively => *, #, C and B
 	b) There was one more hidden feature, but I removed
 		it in this commit, go to previous commits to see it!
 
@@ -43,18 +42,30 @@ Note:- Feel free to raise any issues if you feel like
 //            *** DON'T FORGET (Not for users, for developers) ***
 // EEPROM space [0] stores if admin password has been
 // changed or not. If no, value is 0, else value is 1.
-// if(EEPROM.read(0) == 0){reset();}  // UNIMPORTANT LINE MAYBE...
 // ////////// If you see 0 at [0] remember to reset
-// EEPROM space [1023] stores current number of users (including admin)
+
+// EEPROM space [1023] stores current number of users (excluding admin)
 // EEPROM space [1022] stores current mode of use:
 //        mode = 1     =>     for home use
 //        mode = 2     =>     for office use
-// unused EEPROM space = [1021]
+// unused EEPROM space = [1021] which should be kept = ' '
+// All the rest of the spaces are used in the following ways:
+//		starting from [1], consecutive 20 spaces are available for users
+//		the first 9 spaces for username, then a ' ' (space)
+//		next 9 spaces for password, then a ' ' again
+//		thus all the multiple of 10 places (Eg: [10], [20], [150], [1110])
+// 		have values ' ' for propper functioning
+//		admin credentials are stored in [1:21] spaces
+//		all the other spaces are ' ' then
+//		first new user credentials are stored from [21] onwards, upto [40]
+//	 	next user comes in at [41] and the process goes on
+// 		when an user is removed, its place gets overwritten by ' 's
 
-// All the spaces except [0], [1022], [1023] (and the unused ones ofcourse) are char type
-// So while reading them never try to read them in int,
+// All the spaces except [0], [1022], [1023] are char type
+// So, while reading them never try to read them in int,
 // to store them, only use char type variables
 // [0], [1022], and [1023] have to be read in int type vaiable!
+
 
 LiquidCrystal lcd1(0, 1, 10, 11, 12, 13);
 int ServoPin = A1;
@@ -124,36 +135,25 @@ void loop(){
 			}
 		}
 	}
-	if(analogRead(A0) > 500){
-		pwdc = 0;
-		lcd1.clear();
-		lcd1.print("     Reset?");
-		lcd1.setCursor(0,1);
-		lcd1.print("1: Yes    2: No");
-		while(true){
-			key = keypad.getKey();
-			if(key == '1'){
-				lcd1.clear();
-				lcd1.print("Running factory");
-				lcd1.setCursor(0,1);
-				lcd1.print("RESET!");
-				reset();
-				delay(2000);
-				lcd1.clear();
-				break;
-			}
-			if(key == '2'){break;}
-		}
-		lcd1.clear();
-	}
+	if(analogRead(A0) > 500){callReset();}
 	if(key == '*' && pwdc == 0){pwdc++;}
 	if(key == '#' && pwdc == 1){pwdc++;}
-	if(key == 'D' && pwdc == 2){pwdc++;}
-	if(key == 'C' && pwdc == 3){
+	if(key == 'C' && pwdc == 2){pwdc++;}
+	if(key == 'B' && pwdc == 3){
 		ChangePWD();
 		pwdc = 0;
 	}
-	if(key != '*' && key != '#' && key != 'D' && key != 'C' && key != 0){pwdc = 0;}
+	if(key != '*' && key != '#' && key != 'B' && key != 'C' && key != 0){pwdc = 0;}
+	if(key == '0'){
+		lcd1.clear();
+		lcd1.print("Number of Users:");
+		lcd1.setCursor(0,1);
+		lcd1.print("1 Admin + ");
+		lcd1.print(EEPROM.read(1023));
+		lcd1.print(" oth");
+		delay(2000);
+		lcd1.clear();
+	}
 }
 
 void adminUser(){
@@ -181,12 +181,27 @@ void adminUser(){
 				res = 'E';
 				while(res == 'E'){res = keypad.getKey();}
 				if(res == '1'){
-					if(EEPROM.read(1023) == 1){AddUser();}
-					else{MemoryFull();}
+					if(EEPROM.read(1023) < 50){AddUser();}
+					else{
+						lcd1.clear();
+						lcd1.print("Memory Full!");
+						lcd1.setCursor(0, 1);
+						lcd1.print("No more New User");
+						delay(2000);
+						lcd1.clear();
+					}
 					break;
 				}
 				if(res == '2'){
-					RemoveUser();
+					if(EEPROM.read(1023) > 0){RemoveUser();}
+					else{
+						lcd1.clear();
+						lcd1.print("Cannot Remove");
+						lcd1.setCursor(0, 1);
+						lcd1.print("the last User");
+						delay(2000);
+						lcd1.clear();
+					}
 					break;
 				}
 				if(res == 'B'){
@@ -220,21 +235,25 @@ void Ready(){
 	lcd1.print("Ready...");
 }
 
-void MemoryFull(){
-	lcd1.clear();
-	lcd1.print("Memory Full!");
-	lcd1.setCursor(0, 1);
-	lcd1.print("No more New User");
-	delay(2000);
-	lcd1.clear();
-}
-
 void ChangePWDadmin(){ // For ADMIN account only!
 	for(int st = 11; st < 20; st++){EEPROM.update(st, ' ');}
-	String to = takeInput("New Password:");
+	String pw1;
+	while(true){
+		pw1 = takeInput("New Password:");
+		String pw2 = takeInput("Re Enter:");
+		if(strcomp(pw1, pw2)){break;}
+		else{
+			lcd1.clear();
+			lcd1.print("Didn't match!");
+			lcd1.setCursor(0,1);
+			lcd1.print("  Try Again!!");
+			delay(1000);
+			lcd1.clear();
+		}
+	}
 	char a;
-	for(int st = 11; st <= to.length()+11; st++){
-		a = to[st-11];
+	for(int st = 11; st <= pw1.length()+11; st++){
+		a = pw1[st-11];
 		EEPROM.write(st, a);
 	}
 	lcd1.clear();
@@ -250,11 +269,24 @@ void ChangePWD(){ //For all accounts incluing ADMIN account.
 	if(a > 0){
 		String pwd = takeInput("Old Password:");
 		if(matchPwd(pwd, a)){
-			String to = takeInput("New Password:");
+			String pw1;
+			while(true){
+				pw1 = takeInput("New Password:");
+				String pw2 = takeInput("Re Enter:");
+				if(strcomp(pw1, pw2)){break;}
+				else{
+					lcd1.clear();
+					lcd1.print("Didn't match!");
+					lcd1.setCursor(0,1);
+					lcd1.print("  Try Again!!");
+					delay(1000);
+					lcd1.clear();
+				}
+			}
 			char b;
 			for(int st = a; st < (a+10); st++){EEPROM.update(st, ' ');}
-			for(int st = a; st <= (to.length()+a); st++){
-				b = to[st-a];
+			for(int st = a; st <= (pw1.length()+a); st++){
+				b = pw1[st-a];
 				EEPROM.write(st, b);
 			}
 			lcd1.clear();
@@ -306,22 +338,36 @@ void AddUser(){
 				}
 				lcd1.clear();
 				lcd1.print("New User Created");
+				int numb = EEPROM.read(1023);
+				EEPROM.write(1023,(numb+1));
 				delay(1000);
 				lcd1.clear();
 				break;
 			}
 		}
 	}
-	else{
-		EEPROM.write(1023,0);
-		MemoryFull();
+	else if(EEPROM.read(1022) != 50){
+		lcd1.clear();
+		lcd1.print("Device ");
+		lcd1.setCursor(0, 1);
+		lcd1.print("   Malfunction");
+		delay(1500);
+		callReset();
 	}
 }
 
 void RemoveUser(){
 	String name = takeInput("Name to remove:");
 	int a = matchName(name);
-	if(a > 0){
+	if(a == 11){
+		lcd1.clear();
+		lcd1.print("Cannot delete,");
+		lcd1.setCursor(0, 1);
+		lcd1.print("  Admin account");
+		delay(1500);
+		lcd1.clear();
+	}
+	else if(a > 0){
 		String pwd = takeInput("Password:");
 		if(matchPwd(pwd, a)){
 			a = a - 10;
@@ -329,11 +375,12 @@ void RemoveUser(){
 				EEPROM.update(a, ' ');
 				a++;
 			}
-			EEPROM.update(1023, 1);
 			lcd1.clear();
 			lcd1.print("Account Deletion");
 			lcd1.setCursor(0, 1);
 			lcd1.print("  Succesful !");
+			int numb = EEPROM.read(1023);
+			EEPROM.write(1023,(numb-1));
 			delay(1500);
 			lcd1.clear();
 		}
@@ -364,7 +411,8 @@ bool login(){
 	else{return WUsn();}
 }
 
-String takeInput(String ask){
+/*
+String takeInput(String ask){ // verify wala takeInput() function
 	String got = "";
 	int cursPos = 0;
 	lcd1.clear();
@@ -455,6 +503,89 @@ String takeInput(String ask){
 			return takeInput(ask);
 		}
 	}
+}
+*/
+
+String takeInput(String ask){  // direct wala takeInput() function
+	String got = "";
+	int cursPos = 0;
+	lcd1.clear();
+	lcd1.print(ask);
+	lcd1.setCursor(0, 1);
+	lcd1.cursor();
+	lcd1.blink();
+	char res2;
+	while(true){
+		res2 = keypad.getKey();
+		if(res2){
+			if(res2 == 'A'){break;}
+			if(res2 == 'C'){
+				got.remove(cursPos-1,1);
+				cursPos--;
+				lcd1.clear();
+				lcd1.print(ask);
+				lcd1.setCursor(0, 1);
+				lcd1.print(got);
+				lcd1.setCursor(cursPos, 1);
+			}
+			else if(res2 == '*'){   // move cursor to left  (if possible)
+				if(cursPos > 0){
+					cursPos--;
+					lcd1.setCursor(cursPos, 1);
+				}
+			}
+			else if(res2 == '#'){   // move cursor to right (if possible)
+				if(cursPos < got.length()){
+					cursPos++;
+					lcd1.setCursor(cursPos, 1);
+				}
+			}
+			else if(res2 == 'B' || res2 == 'D'){}
+			else{
+				if(cursPos == got.length()){
+					lcd1.print(res2);
+					got.concat(res2);
+					cursPos++;
+				}
+				else{
+					got = insert(got, cursPos, res2);
+					cursPos++;
+					lcd1.clear();
+					lcd1.print(ask);
+					lcd1.setCursor(0, 1);
+					lcd1.print(got);
+					lcd1.setCursor(cursPos, 1);
+				}
+			}
+		}
+	}
+	lcd1.noBlink();
+	lcd1.noCursor();
+	// lcd1.clear();
+	// lcd1.print("You Entered: ");
+	// lcd1.setCursor(0, 1);
+	// lcd1.print(got);
+	// delay(500);
+	// lcd1.clear();
+	if(got.length()>9 || got.length() < 4){
+		lcd1.clear();
+		lcd1.print("Incompatible");
+		lcd1.setCursor(9,1);
+		lcd1.print("length");
+		delay(500);
+		lcd1.clear();
+		lcd1.print("Max length = 9");
+		lcd1.setCursor(0,1);
+		lcd1.print("Min length = 4");
+		delay(1000);
+		lcd1.clear();
+		lcd1.print("Read User Guide");
+		lcd1.setCursor(0,1);
+		lcd1.print("and Try Again!");
+		delay(500);
+		got = takeInput(ask);
+	}
+	return got;
 }
 
 String insert(String got, int p, char c){
@@ -558,6 +689,46 @@ bool WUsn(){
 
 char admin[5] = "1234";
 
+void callReset(){
+	lcd1.clear();
+	lcd1.print("     Reset?");
+	lcd1.setCursor(0,1);
+	lcd1.print("1: Yes    2: No");
+	char key;
+	while(true){
+		key = keypad.getKey();
+		if(key == '1'){
+			lcd1.clear();
+			lcd1.print("This will remove");
+			lcd1.setCursor(0,1);
+			lcd1.print("   all your data");
+			delay(2000);
+			lcd1.clear();
+			lcd1.print("    Proceed?");
+			lcd1.setCursor(0,1);
+			lcd1.print("1: Yes    2: No");
+			char key2;
+			while(true){
+				key2 = keypad.getKey();
+				if(key2 == '1'){
+					lcd1.clear();
+					lcd1.print("Running factory");
+					lcd1.setCursor(0,1);
+					lcd1.print("RESET!");
+					reset();
+					delay(2000);
+					lcd1.clear();
+					break;
+				}
+				if(key2 == '2'){break;}
+			}
+			break;
+		}
+		if(key == '2'){break;}
+	}
+	lcd1.clear();
+}
+
 void reset(){
 	EEPROMclear();
 	for(int j = 1; j < 6; j++){ // adding the admin account!
@@ -570,10 +741,10 @@ void reset(){
 
 void EEPROMclear(){
 	EEPROM.update(0, 0);
-	for(int i=1; i<1021; i++){
+	for(int i=1; i<1022; i++){
 		EEPROM.update(i, ' ');
 	}
-	EEPROM.update(1023, 1);
+	EEPROM.update(1023, 0);
 }
 
 
